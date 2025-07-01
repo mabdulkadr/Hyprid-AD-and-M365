@@ -24,22 +24,16 @@
     Date    : 2025-06-23
 #>
 
-# ===============================
-# Load Required PowerShell Modules
-# ===============================
+# =============================== Load Required PowerShell Modules ===============================
 Import-Module ActiveDirectory -ErrorAction Stop               # For querying local AD users
-Import-Module Microsoft.Graph.Users -ErrorAction Stop        # For querying Microsoft Entra ID users
+Import-Module Microsoft.Graph.Users -ErrorAction Stop         # For querying Microsoft Entra ID users
 
-# ===============================
-# Connect to Microsoft Graph
-# ===============================
+# =============================== Connect to Microsoft Graph ===============================
 Write-Host "🔄 Connecting to Microsoft Graph..." -ForegroundColor Cyan
 Connect-MgGraph -Scopes "User.Read.All", "Directory.Read.All" -NoWelcome
 Write-Host "✅ Connected to Microsoft Graph.`n" -ForegroundColor Green
 
-# ===============================
-# Setup Export Paths
-# ===============================
+# =============================== Setup Export Paths ===============================
 $timestamp  = Get-Date -Format "yyyy-MM-dd_HH-mm"
 $reportPath = "C:\Reports"
 if (-not (Test-Path $reportPath)) {
@@ -49,28 +43,20 @@ if (-not (Test-Path $reportPath)) {
 $csvPath = "$reportPath\FullUserReport_$timestamp.csv"
 $logPath = "$reportPath\HybridUserAuditLog_$timestamp.txt"
 
-# ===============================
-# Define CSV Column Order
-# ===============================
+# =============================== Define CSV Column Order ===============================
 $columns = @(
     'Username','DisplayName','Department','Title','Email',
     'InAD','AD_Enabled','AD_Created','AD_LastLogon','AD_WhenChanged','AD_PwdLastSet','AD_Description','AD_DistinguishedName',
     'InEntraID','Entra_Enabled','Entra_Created','Entra_LastInteractiveSignIn','Entra_LastNonInteractiveSignIn'
 )
 
-# ===============================
-# Initialize CSV with Headers
-# ===============================
+# =============================== Initialize CSV with Headers ===============================
 @() | Select-Object $columns | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
 
-# ===============================
-# Start Logging Output
-# ===============================
+# =============================== Start Logging Output ===============================
 Start-Transcript -Path $logPath -Append
 
-# ===============================
-# Fetch Users from Microsoft Entra ID
-# ===============================
+# =============================== Fetch Users from Microsoft Entra ID ===============================
 Write-Host "🔎 Fetching Entra ID users..." -ForegroundColor Yellow
 $entraUsers = @{}
 $j = 0
@@ -87,9 +73,7 @@ try {
     Write-Host "❌ Failed to load Entra ID users: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# ===============================
-# Fetch AD Users and Generate Merged Report
-# ===============================
+# =============================== Fetch AD Users and Generate Merged Report ===============================
 Write-Host "`n🔎 Fetching AD users..." -ForegroundColor Yellow
 $i = 0
 Get-ADUser -Filter * -Properties * | ForEach-Object {
@@ -125,9 +109,7 @@ Get-ADUser -Filter * -Properties * | ForEach-Object {
     Write-Host "[✔] $i - $username : $($record.DisplayName)" -ForegroundColor Green
 }
 
-# ===============================
-# Wrap-Up
-# ===============================
+# =============================== Wrap-Up ===============================
 Stop-Transcript
 Write-Host "`n✅ Report saved to: $csvPath" -ForegroundColor Green
 Start-Process "explorer.exe" -ArgumentList (Split-Path $csvPath)
